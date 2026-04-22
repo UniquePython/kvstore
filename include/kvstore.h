@@ -6,7 +6,8 @@ typedef struct
     enum
     {
         KVSTORE_RES_TAG_OK,
-        KVSTORE_RES_TAG_ERR
+        KVSTORE_RES_TAG_ERR,
+        KVSTORE_RES_TAG_NOT_FOUND
     } tag;
     union
     {

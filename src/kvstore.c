@@ -130,3 +130,33 @@ kvstore_res_t kvstore_set(kvstore_table_t *table, kvstore_key_t key, kvstore_val
         .tag = KVSTORE_RES_TAG_OK,
         .value = NULL};
 }
+
+kvstore_res_t kvstore_get(kvstore_table_t *table, kvstore_key_t key)
+{
+    if (!table || !key)
+    {
+        return (kvstore_res_t){
+            .tag = KVSTORE_RES_TAG_ERR,
+            .errmsg = "Invalid argument"};
+    }
+
+    unsigned long hash = djb2_hash(key);
+    size_t index = hash & (table->nBuckets - 1);
+
+    kvstore_entry_t *curr = table->buckets[index];
+
+    while (curr)
+    {
+        if (strcmp(curr->key, key) == 0)
+        {
+            return (kvstore_res_t){
+                .tag = KVSTORE_RES_TAG_OK,
+                .value = curr->value};
+        }
+        curr = curr->nextEntry;
+    }
+
+    return (kvstore_res_t){
+        .tag = KVSTORE_RES_TAG_NOT_FOUND,
+        .value = NULL};
+}
