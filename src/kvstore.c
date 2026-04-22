@@ -199,3 +199,28 @@ kvstore_res_t kvstore_delete(kvstore_table_t *table, kvstore_key_t key)
         .tag = KVSTORE_RES_TAG_NOT_FOUND,
         .value = NULL};
 }
+
+void kvstore_destroyTable(kvstore_table_t *table)
+{
+    if (!table)
+        return;
+
+    for (size_t i = 0; i < table->nBuckets; i++)
+    {
+        kvstore_entry_t *curr = table->buckets[i];
+
+        while (curr)
+        {
+            kvstore_entry_t *next = curr->nextEntry;
+
+            free(curr->key);
+            free(curr->value);
+            free(curr);
+
+            curr = next;
+        }
+    }
+
+    free(table->buckets);
+    free(table);
+}
