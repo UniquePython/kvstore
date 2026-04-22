@@ -1,7 +1,10 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include "kvstore.h"
 
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define N_BUCKETS_INIT 32
 
@@ -53,4 +56,77 @@ kvstore_res_t kvstore_createTable(const char *table_name)
     return (kvstore_res_t){
         .tag = KVSTORE_RES_TAG_OK,
         .value = table};
+}
+
+kvstore_res_t kvstore_set(kvstore_table_t *table, kvstore_key_t key, kvstore_value_t value)
+{
+    if (!table || !key || !value)
+    {
+        return (kvstore_res_t){
+            .tag = KVSTORE_RES_TAG_ERR,
+            .errmsg = "Invalid argument"};
+    }
+
+    unsigned long hash = djb2_hash(key);
+    size_t index = hash & (table->nBuckets - 1);
+
+    kvstore_entry_t *curr = table->buckets[index];
+
+    // Check if key exists (update path)
+    while (curr)
+    {
+        if (strcmp(curr->key, key) == 0)
+        {
+            char *newval = strdup(value);
+            if (!newval)
+            {
+                return (kvstore_res_t){
+                    .tag = KVSTORE_RES_TAG_ERR,
+                    .errmsg = "Failed to allocate value"};
+            }
+
+            free(curr->value);
+            curr->value = newval;
+
+            return (kvstore_res_t){
+                .tag = KVSTORE_RES_TAG_OK,
+                .value = NULL};
+        }
+        curr = curr->nextEntry;
+    }
+
+    // Insert new entry at head
+    kvstore_entry_t *newEntry = malloc(sizeof *newEntry);
+    if (!newEntry)
+    {
+        return (kvstore_res_t){
+            .tag = KVSTORE_RES_TAG_ERR,
+            .errmsg = "Failed to allocate entry"};
+    }
+
+    newEntry->key = strdup(key);
+    if (!newEntry->key)
+    {
+        free(newEntry);
+        return (kvstore_res_t){
+            .tag = KVSTORE_RES_TAG_ERR,
+            .errmsg = "Failed to allocate key"};
+    }
+
+    newEntry->value = strdup(value);
+    if (!newEntry->value)
+    {
+        free(newEntry->key);
+        free(newEntry);
+        return (kvstore_res_t){
+            .tag = KVSTORE_RES_TAG_ERR,
+            .errmsg = "Failed to allocate value"};
+    }
+
+    newEntry->nextEntry = table->buckets[index];
+    table->buckets[index] = newEntry;
+
+    return (kvstore_res_t){
+        .tag = KVSTORE_RES_TAG_OK,
+        .value = NULL};
 }
