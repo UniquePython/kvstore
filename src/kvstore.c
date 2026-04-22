@@ -1,6 +1,9 @@
 #include "kvstore.h"
 
 #include <stddef.h>
+#include <stdlib.h>
+
+#define N_BUCKETS_INIT 32
 
 typedef struct kvstore_entry_t
 {
@@ -22,4 +25,32 @@ unsigned long djb2_hash(const char *str)
     while ((c = *str++))
         h = h * 33 + c;
     return h;
+}
+
+kvstore_res_t kvstore_createTable(const char *table_name)
+{
+    (void)table_name; // unused for now
+
+    kvstore_table_t *table = malloc(sizeof *table);
+    if (!table)
+    {
+        return (kvstore_res_t){
+            .tag = KVSTORE_RES_TAG_ERR,
+            .errmsg = "Failed to allocate table"};
+    }
+
+    table->nBuckets = N_BUCKETS_INIT;
+
+    table->buckets = calloc(table->nBuckets, sizeof *table->buckets);
+    if (!table->buckets)
+    {
+        free(table);
+        return (kvstore_res_t){
+            .tag = KVSTORE_RES_TAG_ERR,
+            .errmsg = "Failed to allocate buckets"};
+    }
+
+    return (kvstore_res_t){
+        .tag = KVSTORE_RES_TAG_OK,
+        .value = table};
 }
