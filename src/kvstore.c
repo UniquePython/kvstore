@@ -14,3 +14,12 @@ typedef struct kvstore_table_t
     kvstore_entry_t **buckets;
     size_t nBuckets;
 } kvstore_table_t;
+
+unsigned long djb2_hash(const char *str)
+{
+    unsigned long h = 5381;
+    int c;
+    while ((c = *str++))
+        h = h * 33 + c;
+    return h;
+}
